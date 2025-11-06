@@ -1,0 +1,58 @@
+﻿services:
+  
+  orders.database:
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: orders
+    ports:
+      - "5432:5432"
+  
+  orders.broker:
+    image: rabbitmq:3-management
+    container_name: orders.broker
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+  
+  orders.api:
+    image: orders.api
+    build:
+      context: .
+      dockerfile: src/Orders.Api/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__OrdersDb: "Host=orders.database;Port=5432;Database=orders;Username=postgres;Password=password"
+      RabbitMq__HostName: "orders.broker"
+      RabbitMq__UserName: "guest"
+      RabbitMq__Password: "guest"
+      RabbitMq__Port: 5672
+    depends_on:
+      - orders.broker
+      - orders.database
+    restart: on-failure
+    
+  orders.worker:
+    image: orders.worker
+    build:
+      context: .
+      dockerfile: src/Orders.Worker/Dockerfile
+    environment:
+      ConnectionStrings__OrdersDb: "Host=orders.database;Port=5432;Database=orders;Username=postgres;Password=password"
+      RabbitMq__HostName: "orders.broker"
+      RabbitMq__UserName: "guest"
+      RabbitMq__Password: "guest"
+      RabbitMq__Port: 5672
+    depends_on:
+      - orders.broker
+      - orders.database
+      - orders.api
+    restart: on-failure
+

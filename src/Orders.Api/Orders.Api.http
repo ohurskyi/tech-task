@@ -1,0 +1,58 @@
+@host = http://localhost:5194
+
+### Valid Order (should be accepted and processed)
+POST {{host}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "C001",
+  "items": [
+    { "sku": "ITEM-1", "quantity": 2, "unitPrice": 50.0 },
+    { "sku": "ITEM-2", "quantity": 1, "unitPrice": 25.0 }
+  ],
+  "totalAmount": 125.0
+}
+
+###
+
+### Invalid Order (should fail simple validation on API)
+POST {{host}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "",
+  "items": [],
+  "totalAmount": 100.0
+}
+
+###
+
+### Invalid Order (should fail domain validation and move to error queue)
+POST {{host}}/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "CUST-5678",
+  "items": [
+    { "sku": "ITEM-3", "quantity": 1, "unitPrice": 100.0 }
+  ],
+  "totalAmount": 100.0
+}
+
+###
+
+### Get total count of all orders
+GET http://localhost:8080/api/orders
+Accept: application/json
+
+###
+
+### Get count of pending orders
+GET http://localhost:8080/api/orders?status=pending
+Accept: application/json
+
+###
+
+### Get count of processed orders
+GET http://localhost:8080/api/orders?status=processed
+Accept: application/json
